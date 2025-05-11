@@ -1,0 +1,12 @@
+Suggested Milestones
+Fetch and display live stock + option data
+
+Implement signal generator (RSI, MACD, SMA logic)
+
+Log trades + simulate outcomes
+
+Add GPT call to explain signals
+
+Optional: Use ML model to rank trade setups
+
+Host it via Render, Railway, or Replit (free)

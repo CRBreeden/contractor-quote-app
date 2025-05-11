@@ -1,0 +1,7 @@
+# Python dependencies
+
+flask
+pandas
+yfinance
+ta
+openai

@@ -1,0 +1,1 @@
+# 🔧 Core app logic (Flask, signals, AI)
