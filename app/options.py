@@ -8,7 +8,7 @@ ticker = "AAPL"
 
 def get_stock_history(ticker):
     stock = yf.Ticker(ticker)
-    hist = stock.history(period="1mo")
+    hist = stock.history(period="6mo")
     return hist
 
 # stock1 = get_stock_history(ticker)
