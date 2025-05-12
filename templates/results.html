@@ -1,21 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Trading Signals</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>📈 Buy Signals</h1>
-    <ul>
-        {% for stock in buys %}
-        <li>{{ stock.ticker }} → BUY (Score: {{ stock.score }})</li>
-        {% endfor %}
-    </ul>
+    <h1>📊 Trading Signals</h1>
 
-    <h1>🔻 Sell Signals</h1>
-    <ul>
-        {% for stock in sells %}
-        <li>{{ stock.ticker }} → SELL (Score: {{ stock.score }})</li>
-        {% endfor %}
-    </ul>
+    <div class="container">
+        <div class="card">
+            <h2>📈 Buy Signals</h2>
+            {% for stock in buys %}
+                <div class="stock-item" onclick="explainStock('{{ stock.ticker }}')">
+                    {{ stock.ticker }} → <span class="buy">BUY</span> (Score: {{ stock.score }})
+</div>
+
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <h2>🔻 Sell Signals</h2>
+            {% for stock in sells %}
+                <div class="stock-item" onclick="alert('You clicked {{ stock.ticker }}!')">
+                    {{ stock.ticker }} → <span class="sell">SELL</span> (Score: {{ stock.score }})
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script>
+function explainStock(ticker) {
+    fetch(`/explain/${ticker}`)
+        .then(response => response.json())
+        .then(data => {
+            let message = `
+📈 ${data.ticker} Summary
+-------------------------------
+✅ Pros:
+- ${data.pros.join("\n- ")}
+
+⚠️ Cons:
+- ${data.cons.join("\n- ")}
+
+💰 Buy at: $${data.buy_price}
+💸 Sell at: $${data.sell_price}
+📊 Expected Return: ${data.expected_return}
+🔒 Confidence: ${data.confidence}
+            `;
+            alert(message);
+        })
+        .catch(err => {
+            alert("Failed to fetch summary: " + err);
+        });
+}
+</script>
+
 </body>
 </html>

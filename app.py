@@ -1,7 +1,19 @@
 from flask import Flask, render_template
 from app.screen import screen_tickers_from_csv
+from ai import get_ai_summary
+
 
 app = Flask(__name__)
+
+
+from flask import jsonify
+
+@app.route('/explain/<ticker>')
+def explain_stock(ticker):
+    explanation = get_ai_summary(ticker)
+    return jsonify(explanation)
+
+
 
 @app.route('/')
 def home():
@@ -16,3 +28,4 @@ def home():
 
 if __name__ == '__main__':
     app.run(debug=True)
+

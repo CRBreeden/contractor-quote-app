@@ -1,0 +1,62 @@
+body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        background: #f4f4f4;
+    }
+
+     h1 {
+        text-align: center;
+        color: #333;
+    }
+
+    .container {
+        display: flex;
+        gap: 40px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 20px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 20px;
+        width: 300px;
+    }
+
+    .card h2 {
+        margin-top: 0;
+    }
+
+    .stock-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .buy {
+        color: green;
+        font-weight: bold;
+    }
+
+        .sell {
+        color: red;
+        font-weight: bold;
+    }
+
+    .stock-item:hover {
+    background-color: #f0f8ff;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .card {
+        width: 90%;
+    }
+}
