@@ -1,1 +1,0 @@
-# Technical indicator logic (RSI, MACD, SMA)
