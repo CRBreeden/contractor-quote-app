@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trading Signals</title>
+</head>
+<body>
+    <h1>📈 Buy Signals</h1>
+    <ul>
+        {% for stock in buys %}
+        <li>{{ stock.ticker }} → BUY (Score: {{ stock.score }})</li>
+        {% endfor %}
+    </ul>
+
+    <h1>🔻 Sell Signals</h1>
+    <ul>
+        {% for stock in sells %}
+        <li>{{ stock.ticker }} → SELL (Score: {{ stock.score }})</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
