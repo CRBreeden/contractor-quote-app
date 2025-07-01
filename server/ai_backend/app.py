@@ -57,7 +57,9 @@ async def generate_quote_items(request: Request):
 
         prompt = f"""
 You are a contractor assistant. Based on the following job, generate a list of all construction materials needed. 
-Do not include tools. Most importantly, include realistic quantities and prices for each item.
+Do not include tools. Most importantly, include realistic quantities and prices for each item. Really think about what materials are needed for this job.
+Please think about every aspect of the job, including any potential issues that might arise and what materials would be needed to address them. Also 
+think about every single little detail that might be needed, even if it seems obvious.
 
 Job:
 "{job}"
@@ -238,6 +240,8 @@ Only return valid JSON — no extra text.
 # Stripe Subscription Integration
 # -------------------------------
 
+SUBSCRIPTION_PRICE_ID = "price_1RZRlsGfxt4ijyeAG2EP2Yvu"  # Your Stripe subscription price ID
+
 @app.post("/create-subscription-session")
 async def create_subscription_session(request: Request):
     data = await request.json()
@@ -252,6 +256,6 @@ async def create_subscription_session(request: Request):
             cancel_url="http://localhost:5173/subscription-cancelled",
             customer_email=customer_email,
         )
-        return {"sessionId": session.id}
+        return {"url": session.url}  # return URL for frontend redirect
     except Exception as e:
         return {"error": str(e)}
