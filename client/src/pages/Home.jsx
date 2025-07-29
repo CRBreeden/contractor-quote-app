@@ -106,7 +106,7 @@ export default function Home() {
           </p>
           {/* --- NEW BUTTON HERE --- */}
           <button
-           onClick={() => navigate('/quote-builder')}
+           onClick={() => navigate('/quote')}
 
             className="bg-blue-600 text-white px-8 py-3 rounded-md font-semibold mb-4 hover:bg-blue-700 transition"
           >
