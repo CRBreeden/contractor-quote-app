@@ -20,13 +20,15 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://contractor-quote-appai.vercel.app",
-        "https://contractor-quote-app-z997.vercel.app"
+        "https://contractor-quote-app-z997.vercel.app",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Stripe setup
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
