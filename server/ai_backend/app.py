@@ -16,10 +16,10 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 app = FastAPI()
 
-# ✅ CORS config to allow frontend access
+# ✅ CORS config to allow ANY frontend access (for debugging only)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://contractor-quote-appai.vercel.app"],  # your Vite frontend
+    allow_origins=["*"],   # <--- Allow ALL origins for debugging
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
