@@ -28,6 +28,9 @@ export default function QuotePreview() {
     materialsMarkup: 15,
   })
 
+  // 👇 Use the env variable for the AI backend
+  const aiApiUrl = import.meta.env.VITE_AI_API_URL
+
   const handleMaterialChange = (index, field, value) => {
     const updated = [...materials]
     updated[index][field] =
@@ -78,7 +81,7 @@ export default function QuotePreview() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/save-quote', {
+      const res = await fetch(`${aiApiUrl}/save-quote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

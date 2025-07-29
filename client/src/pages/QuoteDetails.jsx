@@ -21,6 +21,9 @@ export default function QuoteDetails() {
   })
   const [loading, setLoading] = useState(false) // loading state added
 
+  // 👇 Use env variable for the AI backend
+  const aiApiUrl = import.meta.env.VITE_AI_API_URL
+
   const handleChange = e => {
     const { name, value } = e.target
     setData(d => ({ ...d, [name]: value }))
@@ -33,7 +36,7 @@ export default function QuoteDetails() {
   const handleNext = async () => {
     setLoading(true) // show loading overlay
     try {
-      const res = await fetch('http://localhost:8000/quote-details', {
+      const res = await fetch(`${aiApiUrl}/quote-details`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -7,6 +7,9 @@ export default function QuoteDashboard() {
   const [quotes, setQuotes] = useState([])
   const navigate = useNavigate()
 
+  // 👇 Use the env variable for the AI backend
+  const aiApiUrl = import.meta.env.VITE_AI_API_URL
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
@@ -14,7 +17,7 @@ export default function QuoteDashboard() {
       return
     }
 
-    fetch('http://localhost:8000/quotes', {
+    fetch(`${aiApiUrl}/quotes`, {
       headers: {
         Authorization: token
       }
@@ -28,7 +31,7 @@ export default function QuoteDashboard() {
         }
       })
       .catch(err => console.error('Failed to load quotes:', err))
-  }, [navigate])
+  }, [navigate, aiApiUrl])
 
   const handleView = (quote) => {
     // Parse JSON string if needed, then navigate to preview page with full quote data

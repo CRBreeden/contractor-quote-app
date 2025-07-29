@@ -1,5 +1,5 @@
 // src/api.js
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_AI_API_URL;
 
 export async function getAIQuoteItems(jobDescription) {
   try {
@@ -15,7 +15,7 @@ export async function getAIQuoteItems(jobDescription) {
 
     return await res.json();
   } catch (err) {
-    console.error('Error calling Flask backend:', err);
+    console.error('Error calling AI backend:', err); // <-- optionally update this message
     return [];
   }
 }

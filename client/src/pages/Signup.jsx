@@ -9,6 +9,9 @@ export default function Signup() {
   const [agreeTerms, setAgreeTerms] = useState(false)
   const [agreeDisclaimer, setAgreeDisclaimer] = useState(false)
 
+  // 👇 Use env variable for backend URL
+  const aiApiUrl = import.meta.env.VITE_AI_API_URL
+
   const handleChange = e => {
     const { name, value } = e.target
     setForm(f => ({ ...f, [name]: value }))
@@ -22,7 +25,7 @@ export default function Signup() {
       return
     }
 
-    const res = await fetch('http://localhost:8000/signup', {
+    const res = await fetch(`${aiApiUrl}/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

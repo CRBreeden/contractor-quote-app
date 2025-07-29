@@ -68,13 +68,16 @@ export default function Home() {
     return () => clearInterval(type)
   }, [index])
 
-  // NEW: Stripe Subscribe Handler (redirects to Stripe Checkout)
+  // Stripe Subscribe Handler (redirects to Stripe Checkout)
   const handleSubscribe = async () => {
     setLoading(true)
     setError(null)
 
+    // 👇👇👇 CHANGE: Use environment variable for API URL!
+    const aiApiUrl = import.meta.env.VITE_AI_API_URL
+
     try {
-      const response = await fetch('http://localhost:8000/create-subscription-session', {
+      const response = await fetch(`${aiApiUrl}/create-subscription-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'customer@example.com' }) // Replace with actual user email if available

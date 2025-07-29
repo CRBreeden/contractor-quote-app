@@ -7,6 +7,9 @@ export default function Login() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
 
+  // 👇 Add the env variable for the AI backend
+  const aiApiUrl = import.meta.env.VITE_AI_API_URL
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
@@ -22,7 +25,8 @@ export default function Login() {
   const handleSubmit = async e => {
     e.preventDefault()
 
-    const res = await fetch('http://localhost:8000/login', {
+    // 👇 Use env variable instead of hardcoded URL
+    const res = await fetch(`${aiApiUrl}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
