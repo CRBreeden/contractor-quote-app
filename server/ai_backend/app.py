@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import os
 import json
 import stripe
+import asyncio
 
 from quotes_db import save_quote_for_user, get_quotes_for_user
 from users_db import create_user, verify_user, get_user_by_email
@@ -28,7 +29,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # Stripe setup
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -88,21 +88,28 @@ Format:
 
 Only return valid JSON — no extra text.
 """
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.5
-        )
+        try:
+            # Use asyncio.wait_for to timeout OpenAI API if it's too slow
+            response = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.5
+                ),
+                timeout=15  # seconds
+            )
+            raw_output = response.choices[0].message.content.strip()
+            if raw_output.startswith("```json"):
+                raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
+            items = json.loads(raw_output)
+            return items
+        except asyncio.TimeoutError:
+            return {"error": "AI took too long to respond. Please try again."}
+        except json.JSONDecodeError:
+            return {"error": "Invalid JSON from AI", "raw": raw_output}
+        except Exception as e:
+            return {"error": "AI service error", "exception": str(e)}
 
-        raw_output = response.choices[0].message.content.strip()
-        if raw_output.startswith("```json"):
-            raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
-
-        items = json.loads(raw_output)
-        return items
-
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON from AI", "raw": raw_output}
     except Exception as e:
         return {"error": "Server error", "exception": str(e)}
 
@@ -174,14 +181,15 @@ def login(data: LoginData):
 
 @app.post("/quote-details")
 async def quote_details(request: Request):
-    data = await request.json()
-    print("✅ Quote Details Received:", data)
+    try:
+        data = await request.json()
+        print("✅ Quote Details Received:", data)
 
-    project_details = data.get("projectDetails", "")
-    if not project_details:
-        return {"success": False, "error": "Missing project details"}
+        project_details = data.get("projectDetails", "")
+        if not project_details:
+            return {"success": False, "error": "Missing project details"}
 
-    prompt = f"""
+        prompt = f"""
 You are a contractor assistant. Based on the following job, generate a list of all construction materials needed. 
 Do not include tools. Most importantly, include realistic quantities and prices for each item.
 
@@ -207,39 +215,46 @@ Format:
 
 Only return valid JSON — no extra text.
 """
+        try:
+            # Use asyncio.wait_for to timeout OpenAI API if it's too slow
+            response = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.5
+                ),
+                timeout=15  # seconds
+            )
+            raw_output = response.choices[0].message.content.strip()
+            if raw_output.startswith("```json"):
+                raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
+            materials = json.loads(raw_output)
+        except asyncio.TimeoutError:
+            return {"success": False, "error": "AI took too long to respond. Please try again."}
+        except json.JSONDecodeError:
+            return {"success": False, "error": "Invalid JSON from AI", "raw": raw_output}
+        except Exception as e:
+            print("Error generating materials:", e)
+            return {"success": False, "error": str(e)}
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.5
-        )
+        # Simple labor estimation stub - update as needed
+        labor = {
+            "workers": 2,
+            "payPerHour": 25,
+            "hoursPerDay": 8,
+            "days": 3,
+            "laborMarkup": 20,
+            "materialsMarkup": 10,
+        }
 
-        raw_output = response.choices[0].message.content.strip()
-        if raw_output.startswith("```json"):
-            raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
-
-        materials = json.loads(raw_output)
-
+        return {
+            "success": True,
+            "materials": materials,
+            "labor": labor
+        }
     except Exception as e:
-        print("Error generating materials:", e)
-        materials = []
-
-    # Simple labor estimation stub - update as needed
-    labor = {
-        "workers": 2,
-        "payPerHour": 25,
-        "hoursPerDay": 8,
-        "days": 3,
-        "laborMarkup": 20,
-        "materialsMarkup": 10,
-    }
-
-    return {
-        "success": True,
-        "materials": materials,
-        "labor": labor
-    }
+        print("Error in /quote-details endpoint:", e)
+        return {"success": False, "error": "Server error", "exception": str(e)}
 
 # -------------------------------
 # Stripe Subscription Integration
