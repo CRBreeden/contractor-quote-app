@@ -72,31 +72,23 @@ export default function Home() {
   const handleSubscribe = async () => {
     setLoading(true)
     setError(null)
-
-    // 👇👇👇 CHANGE: Use environment variable for API URL!
     const aiApiUrl = import.meta.env.VITE_AI_API_URL
-
     try {
       const response = await fetch(`${aiApiUrl}/create-subscription-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'customer@example.com' }) // Replace with actual user email if available
       })
-
       const { url, error } = await response.json()
-
       if (error) {
         setError(error)
         setLoading(false)
         return
       }
-
-      // Directly redirect to Stripe Checkout page
       window.location.href = url
     } catch (err) {
       setError(err.message)
     }
-
     setLoading(false)
   }
 
@@ -112,6 +104,14 @@ export default function Home() {
           <p className="text-lg text-gray-600 mb-6 max-w-md">
             Get accurate, AI-powered estimates in minutes. Plan, price, and quote any project with DoerAI.
           </p>
+          {/* --- NEW BUTTON HERE --- */}
+          <button
+            onClick={() => navigate('/quote-builder')}
+            className="bg-blue-600 text-white px-8 py-3 rounded-md font-semibold mb-4 hover:bg-blue-700 transition"
+          >
+            Go to Quote Builder
+          </button>
+          {/* Keep existing CTA(s) below */}
           <div className="flex gap-4 justify-center">
             <button onClick={() => navigate('/Signup')} className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-900 transition">Try For Free →</button>
           </div>
