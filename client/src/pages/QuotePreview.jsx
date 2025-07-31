@@ -8,11 +8,12 @@ export default function QuotePreview() {
 
   const [formData] = useState(savedQuoteData?.formData || {})
 
+  // Each material has name, description. Optionally user can add qty/unitPrice.
   const [materials, setMaterials] = useState(() => {
     if (!savedQuoteData?.materials) return []
     return savedQuoteData.materials.map(item => ({
       ...item,
-      qty: item.quantity ?? 0,
+      qty: item.quantity ?? 1,
       unitPrice: item.unitPrice ?? 0,
       desc: item.description ?? ''
     }))
@@ -99,6 +100,10 @@ export default function QuotePreview() {
     }
   }
 
+  // Get a Home Depot search URL for any item
+  const getHomeDepotLink = (name) =>
+    `https://www.homedepot.com/s/${encodeURIComponent(name)}`
+
   return (
     <div className="min-h-screen bg-white p-4 text-black max-w-3xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
@@ -136,29 +141,16 @@ export default function QuotePreview() {
               key={index}
               className="flex flex-col sm:flex-row gap-4 border-b py-3 items-start"
             >
-              {/* Image & link column */}
+              {/* Home Depot link column */}
               <div className="flex flex-col items-center sm:items-start w-full sm:w-36">
-                {item.productImage && item.productImage.startsWith('http') ? (
-                  <img
-                    src={item.productImage}
-                    alt={item.name || "Product"}
-                    className="w-28 h-28 object-contain rounded border mb-2 bg-gray-50"
-                  />
-                ) : (
-                  <div className="w-28 h-28 flex items-center justify-center rounded border mb-2 bg-gray-100 text-gray-400 text-xs">
-                    No Image
-                  </div>
-                )}
-                {item.productLink && item.productLink.startsWith('http') && (
-                  <a
-                    href={item.productLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline text-xs mt-1 break-all"
-                  >
-                    View Product
-                  </a>
-                )}
+                <a
+                  href={getHomeDepotLink(item.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline text-xs mb-2 break-all"
+                >
+                  View on Home Depot
+                </a>
               </div>
               {/* Item detail column */}
               <div className="flex-1 flex flex-col gap-1 w-full">
@@ -194,6 +186,7 @@ export default function QuotePreview() {
                       step={0.01}
                       onChange={e => handleMaterialChange(index, 'unitPrice', e.target.value)}
                       className="w-20 border-b border-gray-300 text-center bg-transparent focus:outline-none focus:border-black"
+                      placeholder="Check Home Depot"
                     />
                   </div>
                   <div className="font-semibold">
