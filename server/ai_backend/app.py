@@ -42,9 +42,6 @@ class LoginData(BaseModel):
     email: str
     password: str
 
-# -------------------------------------
-# 🧠 OpenAI sync call, run in thread
-# -------------------------------------
 def generate_materials_sync(prompt):
     return client.chat.completions.create(
         model="gpt-4",
@@ -52,9 +49,6 @@ def generate_materials_sync(prompt):
         temperature=0.5
     )
 
-# -------------------------------------
-# /generate-quote-items
-# -------------------------------------
 @app.post("/generate-quote-items")
 async def generate_quote_items(request: Request):
     try:
@@ -63,11 +57,14 @@ async def generate_quote_items(request: Request):
         if not job:
             return {"error": "Missing job description"}
 
+        # PROMPT updated to request productLink and productImage
         prompt = f"""
-You are a contractor assistant. Based on the following job, generate a list of all construction materials needed. 
-Do not include tools. Most importantly, include realistic quantities and prices for each item. Really think about what materials are needed for this job.
-Please think about every aspect of the job, including any potential issues that might arise and what materials would be needed to address them. Also 
-think about every single little detail that might be needed, even if it seems obvious.
+You are a contractor assistant. Based on the following job, generate a list of all construction materials needed.
+Do not include tools. Most importantly, include realistic quantities and prices for each item.
+
+For each item, include:
+- "productLink": a direct URL to a product listing (prefer Home Depot, or Amazon if Home Depot is not available; if unsure, leave empty)
+- "productImage": a direct URL to an image of the product (prefer the image from the productLink if possible; if unsure, leave empty)
 
 Job:
 "{job}"
@@ -77,6 +74,8 @@ Return a pure JSON array. Each item must include:
 - "description": a short description of use
 - "quantity": realistic amount needed
 - "unitPrice": typical price in USD (not total)
+- "productLink": a direct URL to the product online
+- "productImage": a direct URL to an image of the product online
 
 Format:
 [
@@ -84,7 +83,9 @@ Format:
     "name": "Drywall Sheet 4x8",
     "description": "Used to cover walls and ceilings in interior construction.",
     "quantity": 12,
-    "unitPrice": 15.75
+    "unitPrice": 15.75,
+    "productLink": "https://www.homedepot.com/p/Sheetrock-4-ft-x-8-ft-Drywall/123456789",
+    "productImage": "https://images.homedepot-static.com/productImages/123456789.jpg"
   }},
   ...
 ]
@@ -108,9 +109,6 @@ Only return valid JSON — no extra text.
     except Exception as e:
         return {"error": "Server error", "exception": str(e)}
 
-# -------------------------------------
-# /save-quote
-# -------------------------------------
 @app.post("/save-quote")
 async def save_quote_api(request: Request, authorization: str = Header(None)):
     user_id = verify_token(authorization)
@@ -124,9 +122,6 @@ async def save_quote_api(request: Request, authorization: str = Header(None)):
     save_quote_for_user(quoteName, quoteData, user_id)
     return {"success": True}
 
-# -------------------------------------
-# /quotes
-# -------------------------------------
 @app.get("/quotes")
 def get_quotes_api(authorization: str = Header(None)):
     try:
@@ -139,9 +134,6 @@ def get_quotes_api(authorization: str = Header(None)):
         print("Error in /quotes endpoint:", e)
         return []
 
-# -------------------------------------
-# Auth
-# -------------------------------------
 @app.post("/signup")
 def signup(data: SignupData):
     success = create_user(data.name, data.email, data.password, data.agreed_to_terms)
@@ -165,9 +157,6 @@ def login(data: LoginData):
         "agreed_to_terms": result["agreed"]
     }
 
-# -------------------------------------
-# /quote-details (AI + labor stub)
-# -------------------------------------
 @app.post("/quote-details")
 async def quote_details(request: Request):
     try:
@@ -176,9 +165,15 @@ async def quote_details(request: Request):
         project_details = data.get("projectDetails", "")
         if not project_details:
             return {"success": False, "error": "Missing project details"}
+
+        # PROMPT updated to request productLink and productImage
         prompt = f"""
-You are a contractor assistant. Based on the following job, generate a list of all construction materials needed. 
+You are a contractor assistant. Based on the following job, generate a list of all construction materials needed.
 Do not include tools. Most importantly, include realistic quantities and prices for each item.
+
+For each item, include:
+- "productLink": a direct URL to a product listing (prefer Home Depot, or Amazon if Home Depot is not available; if unsure, leave empty)
+- "productImage": a direct URL to an image of the product (prefer the image from the productLink if possible; if unsure, leave empty)
 
 Job:
 "{project_details}"
@@ -188,6 +183,8 @@ Return a pure JSON array. Each item must include:
 - "description": a short description of use
 - "quantity": realistic amount needed
 - "unitPrice": typical price in USD (not total)
+- "productLink": a direct URL to the product online
+- "productImage": a direct URL to an image of the product online
 
 Format:
 [
@@ -195,7 +192,9 @@ Format:
     "name": "Drywall Sheet 4x8",
     "description": "Used to cover walls and ceilings in interior construction.",
     "quantity": 12,
-    "unitPrice": 15.75
+    "unitPrice": 15.75,
+    "productLink": "https://www.homedepot.com/p/Sheetrock-4-ft-x-8-ft-Drywall/123456789",
+    "productImage": "https://images.homedepot-static.com/productImages/123456789.jpg"
   }},
   ...
 ]
@@ -234,10 +233,7 @@ Only return valid JSON — no extra text.
         print("Error in /quote-details endpoint:", e)
         return {"success": False, "error": "Server error", "exception": str(e)}
 
-# -------------------------------------
-# Stripe Subscription Integration
-# -------------------------------------
-SUBSCRIPTION_PRICE_ID = "price_1RZRlsGfxt4ijyeAG2EP2Yvu"  # Your Stripe subscription price ID
+SUBSCRIPTION_PRICE_ID = "price_1RZRlsGfxt4ijyeAG2EP2Yvu"
 
 @app.post("/create-subscription-session")
 async def create_subscription_session(request: Request):
