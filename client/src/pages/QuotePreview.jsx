@@ -133,14 +133,25 @@ export default function QuotePreview() {
 
           {materials.map((item, index) => (
             <div key={index} className="flex flex-col gap-1 border-b py-3">
-              {/* Show Product Image if available */}
-              {item.productImage && (
+              {/* Product Image (if present) */}
+              {item.productImage && item.productImage.startsWith('http') && (
                 <img
                   src={item.productImage}
                   alt={item.name || "Product"}
                   className="w-32 h-32 object-contain mb-2 rounded border"
                   style={{ background: "#f8f8f8" }}
                 />
+              )}
+              {/* Product Link (if present) */}
+              {item.productLink && item.productLink.startsWith('http') && (
+                <a
+                  href={item.productLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline text-sm mb-1"
+                >
+                  View Product
+                </a>
               )}
               <input
                 type="text"
@@ -156,17 +167,6 @@ export default function QuotePreview() {
                 placeholder="Item description"
                 className="text-sm text-gray-500 w-full bg-transparent border-b border-gray-100 focus:outline-none focus:border-gray-400"
               />
-              {/* Show Product Link if available */}
-              {item.productLink && (
-                <a
-                  href={item.productLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm mt-1"
-                >
-                  View Product
-                </a>
-              )}
               <div className="flex justify-between items-center text-sm mt-1">
                 <div className="flex gap-2 items-center">
                   <label>Qty:</label>
