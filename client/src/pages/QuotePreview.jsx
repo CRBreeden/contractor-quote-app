@@ -132,67 +132,77 @@ export default function QuotePreview() {
           </div>
 
           {materials.map((item, index) => (
-            <div key={index} className="flex flex-col gap-1 border-b py-3">
-              {/* Product Image (if present) */}
-              {item.productImage && item.productImage.startsWith('http') && (
-                <img
-                  src={item.productImage}
-                  alt={item.name || "Product"}
-                  className="w-32 h-32 object-contain mb-2 rounded border"
-                  style={{ background: "#f8f8f8" }}
+            <div
+              key={index}
+              className="flex flex-col sm:flex-row gap-4 border-b py-3 items-start"
+            >
+              {/* Image & link column */}
+              <div className="flex flex-col items-center sm:items-start w-full sm:w-36">
+                {item.productImage && item.productImage.startsWith('http') ? (
+                  <img
+                    src={item.productImage}
+                    alt={item.name || "Product"}
+                    className="w-28 h-28 object-contain rounded border mb-2 bg-gray-50"
+                  />
+                ) : (
+                  <div className="w-28 h-28 flex items-center justify-center rounded border mb-2 bg-gray-100 text-gray-400 text-xs">
+                    No Image
+                  </div>
+                )}
+                {item.productLink && item.productLink.startsWith('http') && (
+                  <a
+                    href={item.productLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline text-xs mt-1 break-all"
+                  >
+                    View Product
+                  </a>
+                )}
+              </div>
+              {/* Item detail column */}
+              <div className="flex-1 flex flex-col gap-1 w-full">
+                <input
+                  type="text"
+                  value={item.name}
+                  onChange={e => handleMaterialChange(index, 'name', e.target.value)}
+                  placeholder="Item name"
+                  className="text-base font-medium w-full bg-transparent border-b border-gray-200 focus:outline-none focus:border-black"
                 />
-              )}
-              {/* Product Link (if present) */}
-              {item.productLink && item.productLink.startsWith('http') && (
-                <a
-                  href={item.productLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm mb-1"
-                >
-                  View Product
-                </a>
-              )}
-              <input
-                type="text"
-                value={item.name}
-                onChange={e => handleMaterialChange(index, 'name', e.target.value)}
-                placeholder="Item name"
-                className="text-base font-medium w-full bg-transparent border-b border-gray-200 focus:outline-none focus:border-black"
-              />
-              <input
-                type="text"
-                value={item.desc}
-                onChange={e => handleMaterialChange(index, 'desc', e.target.value)}
-                placeholder="Item description"
-                className="text-sm text-gray-500 w-full bg-transparent border-b border-gray-100 focus:outline-none focus:border-gray-400"
-              />
-              <div className="flex justify-between items-center text-sm mt-1">
-                <div className="flex gap-2 items-center">
-                  <label>Qty:</label>
-                  <input
-                    type="number"
-                    value={item.qty}
-                    min={0}
-                    onChange={e => handleMaterialChange(index, 'qty', e.target.value)}
-                    className="w-16 border-b border-gray-300 text-center bg-transparent focus:outline-none focus:border-black"
-                  />
-                  <label>Price:</label>
-                  <input
-                    type="number"
-                    value={item.unitPrice}
-                    min={0}
-                    step={0.01}
-                    onChange={e => handleMaterialChange(index, 'unitPrice', e.target.value)}
-                    className="w-20 border-b border-gray-300 text-center bg-transparent focus:outline-none focus:border-black"
-                  />
+                <input
+                  type="text"
+                  value={item.desc}
+                  onChange={e => handleMaterialChange(index, 'desc', e.target.value)}
+                  placeholder="Item description"
+                  className="text-sm text-gray-500 w-full bg-transparent border-b border-gray-100 focus:outline-none focus:border-gray-400"
+                />
+                <div className="flex justify-between items-center text-sm mt-1">
+                  <div className="flex gap-2 items-center">
+                    <label>Qty:</label>
+                    <input
+                      type="number"
+                      value={item.qty}
+                      min={0}
+                      onChange={e => handleMaterialChange(index, 'qty', e.target.value)}
+                      className="w-16 border-b border-gray-300 text-center bg-transparent focus:outline-none focus:border-black"
+                    />
+                    <label>Price:</label>
+                    <input
+                      type="number"
+                      value={item.unitPrice}
+                      min={0}
+                      step={0.01}
+                      onChange={e => handleMaterialChange(index, 'unitPrice', e.target.value)}
+                      className="w-20 border-b border-gray-300 text-center bg-transparent focus:outline-none focus:border-black"
+                    />
+                  </div>
+                  <div className="font-semibold">
+                    ${ (item.qty * item.unitPrice).toFixed(2) }
+                  </div>
+                  <button onClick={() => deleteMaterial(index)}>
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
                 </div>
-                <div className="font-semibold">
-                  ${ (item.qty * item.unitPrice).toFixed(2) }
-                </div>
-                <button onClick={() => deleteMaterial(index)}>
-                  <Trash2 className="w-4 h-4 text-red-600" />
-                </button>
               </div>
             </div>
           ))}
