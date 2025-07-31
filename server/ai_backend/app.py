@@ -17,7 +17,6 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 app = FastAPI()
 
-# ✅ CORS config: ONLY your deployed Vercel URLs, nothing else
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -30,13 +29,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Stripe setup
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 SUBSCRIPTION_PRICE_ID = os.getenv("STRIPE_SUBSCRIPTION_PRICE_ID", "price_XXXXXX")
-
-# -------------------------------
-# 🧠 Models
-# -------------------------------
 
 class SignupData(BaseModel):
     name: str
@@ -48,10 +42,19 @@ class LoginData(BaseModel):
     email: str
     password: str
 
-# -------------------------------
-# ✨ AI Quote Item Generation
-# -------------------------------
+# -------------------------------------
+# 🧠 OpenAI sync call, run in thread
+# -------------------------------------
+def generate_materials_sync(prompt):
+    return client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.5
+    )
 
+# -------------------------------------
+# /generate-quote-items
+# -------------------------------------
 @app.post("/generate-quote-items")
 async def generate_quote_items(request: Request):
     try:
@@ -88,68 +91,57 @@ Format:
 
 Only return valid JSON — no extra text.
 """
+        loop = asyncio.get_event_loop()
         try:
-            # Use asyncio.wait_for to timeout OpenAI API if it's too slow
-            response = await asyncio.wait_for(
-                client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.5
-                ),
-                timeout=15  # seconds
+            response = await loop.run_in_executor(
+                None, generate_materials_sync, prompt
             )
             raw_output = response.choices[0].message.content.strip()
             if raw_output.startswith("```json"):
                 raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
             items = json.loads(raw_output)
             return items
-        except asyncio.TimeoutError:
-            return {"error": "AI took too long to respond. Please try again."}
         except json.JSONDecodeError:
             return {"error": "Invalid JSON from AI", "raw": raw_output}
         except Exception as e:
             return {"error": "AI service error", "exception": str(e)}
-
     except Exception as e:
         return {"error": "Server error", "exception": str(e)}
 
-# -------------------------------
-# 🔐 Protected Quote Endpoints
-# -------------------------------
-
+# -------------------------------------
+# /save-quote
+# -------------------------------------
 @app.post("/save-quote")
 async def save_quote_api(request: Request, authorization: str = Header(None)):
     user_id = verify_token(authorization)
     if not user_id:
         return {"error": "Unauthorized"}
-
     body = await request.json()
     quoteName = body.get("quoteName")
     quoteData = body.get("quoteData")
     if not quoteName or not quoteData:
         return {"error": "Missing quoteName or quoteData"}
-
     save_quote_for_user(quoteName, quoteData, user_id)
     return {"success": True}
 
+# -------------------------------------
+# /quotes
+# -------------------------------------
 @app.get("/quotes")
 def get_quotes_api(authorization: str = Header(None)):
     try:
         user_id = verify_token(authorization)
         if not user_id:
             return []
-
         quotes = get_quotes_for_user(user_id)
         return quotes if quotes else []
-
     except Exception as e:
         print("Error in /quotes endpoint:", e)
         return []
 
-# -------------------------------
-# 👤 Auth Endpoints
-# -------------------------------
-
+# -------------------------------------
+# Auth
+# -------------------------------------
 @app.post("/signup")
 def signup(data: SignupData):
     success = create_user(data.name, data.email, data.password, data.agreed_to_terms)
@@ -162,11 +154,9 @@ def login(data: LoginData):
     result = verify_user(data.email, data.password)
     if not result or not result["valid"]:
         return {"success": False, "error": "Invalid credentials"}
-
     user = get_user_by_email(data.email)
     if not user:
         return {"success": False, "error": "User not found"}
-
     token = create_token(user["id"])
     return {
         "success": True,
@@ -175,20 +165,17 @@ def login(data: LoginData):
         "agreed_to_terms": result["agreed"]
     }
 
-# -------------------------------
-# ✅ Fixed /quote-details route with AI materials generation
-# -------------------------------
-
+# -------------------------------------
+# /quote-details (AI + labor stub)
+# -------------------------------------
 @app.post("/quote-details")
 async def quote_details(request: Request):
     try:
         data = await request.json()
         print("✅ Quote Details Received:", data)
-
         project_details = data.get("projectDetails", "")
         if not project_details:
             return {"success": False, "error": "Missing project details"}
-
         prompt = f"""
 You are a contractor assistant. Based on the following job, generate a list of all construction materials needed. 
 Do not include tools. Most importantly, include realistic quantities and prices for each item.
@@ -215,29 +202,21 @@ Format:
 
 Only return valid JSON — no extra text.
 """
+        loop = asyncio.get_event_loop()
         try:
-            # Use asyncio.wait_for to timeout OpenAI API if it's too slow
-            response = await asyncio.wait_for(
-                client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.5
-                ),
-                timeout=15  # seconds
+            response = await loop.run_in_executor(
+                None, generate_materials_sync, prompt
             )
             raw_output = response.choices[0].message.content.strip()
             if raw_output.startswith("```json"):
                 raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
             materials = json.loads(raw_output)
-        except asyncio.TimeoutError:
-            return {"success": False, "error": "AI took too long to respond. Please try again."}
         except json.JSONDecodeError:
             return {"success": False, "error": "Invalid JSON from AI", "raw": raw_output}
         except Exception as e:
             print("Error generating materials:", e)
             return {"success": False, "error": str(e)}
 
-        # Simple labor estimation stub - update as needed
         labor = {
             "workers": 2,
             "payPerHour": 25,
@@ -246,7 +225,6 @@ Only return valid JSON — no extra text.
             "laborMarkup": 20,
             "materialsMarkup": 10,
         }
-
         return {
             "success": True,
             "materials": materials,
@@ -256,17 +234,15 @@ Only return valid JSON — no extra text.
         print("Error in /quote-details endpoint:", e)
         return {"success": False, "error": "Server error", "exception": str(e)}
 
-# -------------------------------
+# -------------------------------------
 # Stripe Subscription Integration
-# -------------------------------
-
+# -------------------------------------
 SUBSCRIPTION_PRICE_ID = "price_1RZRlsGfxt4ijyeAG2EP2Yvu"  # Your Stripe subscription price ID
 
 @app.post("/create-subscription-session")
 async def create_subscription_session(request: Request):
     data = await request.json()
     customer_email = data.get("email")  # optional
-
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
@@ -276,6 +252,6 @@ async def create_subscription_session(request: Request):
             cancel_url="http://localhost:5173/subscription-cancelled",
             customer_email=customer_email,
         )
-        return {"url": session.url}  # return URL for frontend redirect
+        return {"url": session.url}
     except Exception as e:
         return {"error": str(e)}

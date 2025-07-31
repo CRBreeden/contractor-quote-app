@@ -6,7 +6,6 @@ export default function QuotePreview() {
   const navigate = useNavigate()
   const { state: savedQuoteData } = useLocation()
 
-  // Map AI "quantity" → "qty" for inputs and "description" → "desc"
   const [formData] = useState(savedQuoteData?.formData || {})
 
   const [materials, setMaterials] = useState(() => {
@@ -28,7 +27,6 @@ export default function QuotePreview() {
     materialsMarkup: 15,
   })
 
-  // 👇 Use the env variable for the AI backend
   const aiApiUrl = import.meta.env.VITE_AI_API_URL
 
   const handleMaterialChange = (index, field, value) => {
