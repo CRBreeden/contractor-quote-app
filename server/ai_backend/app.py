@@ -49,6 +49,29 @@ def generate_materials_sync(prompt):
         temperature=0.5
     )
 
+def postprocess_materials(items):
+    """
+    Standardizes productLink and productImage fields for each item.
+    """
+    for item in items:
+        # Handle alternate names the AI might output
+        if "product_link" in item:
+            item["productLink"] = item.pop("product_link")
+        if "product_image" in item:
+            item["productImage"] = item.pop("product_image")
+        if "image_url" in item:
+            item["productImage"] = item.pop("image_url")
+        if "link" in item:
+            item["productLink"] = item.pop("link")
+        if "image" in item:
+            item["productImage"] = item.pop("image")
+        # Always provide keys, even if empty
+        if "productLink" not in item:
+            item["productLink"] = ""
+        if "productImage" not in item:
+            item["productImage"] = ""
+    return items
+
 @app.post("/generate-quote-items")
 async def generate_quote_items(request: Request):
     try:
@@ -57,7 +80,6 @@ async def generate_quote_items(request: Request):
         if not job:
             return {"error": "Missing job description"}
 
-        # PROMPT updated to request productLink and productImage
         prompt = f"""
 You are a contractor assistant. Based on the following job, generate a list of all construction materials needed.
 Do not include tools. Most importantly, include realistic quantities and prices for each item.
@@ -101,7 +123,9 @@ Only return valid JSON — no extra text.
             if raw_output.startswith("```json"):
                 raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
             items = json.loads(raw_output)
-            return items
+            materials = postprocess_materials(items)
+            print("✅ [generate-quote-items] materials:", json.dumps(materials, indent=2))
+            return materials
         except json.JSONDecodeError:
             return {"error": "Invalid JSON from AI", "raw": raw_output}
         except Exception as e:
@@ -166,7 +190,6 @@ async def quote_details(request: Request):
         if not project_details:
             return {"success": False, "error": "Missing project details"}
 
-        # PROMPT updated to request productLink and productImage
         prompt = f"""
 You are a contractor assistant. Based on the following job, generate a list of all construction materials needed.
 Do not include tools. Most importantly, include realistic quantities and prices for each item.
@@ -209,7 +232,9 @@ Only return valid JSON — no extra text.
             raw_output = response.choices[0].message.content.strip()
             if raw_output.startswith("```json"):
                 raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
-            materials = json.loads(raw_output)
+            items = json.loads(raw_output)
+            materials = postprocess_materials(items)
+            print("✅ [quote-details] materials:", json.dumps(materials, indent=2))
         except json.JSONDecodeError:
             return {"success": False, "error": "Invalid JSON from AI", "raw": raw_output}
         except Exception as e:
