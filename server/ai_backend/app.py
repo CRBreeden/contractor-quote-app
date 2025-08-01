@@ -49,6 +49,29 @@ def generate_materials_sync(prompt):
         temperature=0.5
     )
 
+def postprocess_materials(items):
+    """
+    Standardizes productLink and productImage fields for each item.
+    """
+    for item in items:
+        # Handle alternate names the AI might output
+        if "product_link" in item:
+            item["productLink"] = item.pop("product_link")
+        if "product_image" in item:
+            item["productImage"] = item.pop("product_image")
+        if "image_url" in item:
+            item["productImage"] = item.pop("image_url")
+        if "link" in item:
+            item["productLink"] = item.pop("link")
+        if "image" in item:
+            item["productImage"] = item.pop("image")
+        # Always provide keys, even if empty
+        if "productLink" not in item:
+            item["productLink"] = ""
+        if "productImage" not in item:
+            item["productImage"] = ""
+    return items
+
 @app.post("/generate-quote-items")
 async def generate_quote_items(request: Request):
     try:
@@ -59,7 +82,11 @@ async def generate_quote_items(request: Request):
 
         prompt = f"""
 You are a contractor assistant. Based on the following job, generate a list of all construction materials needed.
-Do not include tools, labor, links, images, or prices—ONLY give product names and a short description of use.
+Do not include tools. Most importantly, include realistic quantities and prices for each item.
+
+For each item, include:
+- "productLink": a direct URL to a product listing (prefer Home Depot, or Amazon if Home Depot is not available; if unsure, leave empty)
+- "productImage": a direct URL to an image of the product (prefer the image from the productLink if possible; if unsure, leave empty)
 
 Job:
 "{job}"
@@ -67,12 +94,20 @@ Job:
 Return a pure JSON array. Each item must include:
 - "name": product name
 - "description": a short description of use
+- "quantity": realistic amount needed
+- "unitPrice": typical price in USD (not total)
+- "productLink": a direct URL to the product online
+- "productImage": a direct URL to an image of the product online
 
 Format:
 [
   {{
     "name": "Drywall Sheet 4x8",
-    "description": "Used to cover walls and ceilings in interior construction."
+    "description": "Used to cover walls and ceilings in interior construction.",
+    "quantity": 12,
+    "unitPrice": 15.75,
+    "productLink": "https://www.homedepot.com/p/Sheetrock-4-ft-x-8-ft-Drywall/123456789",
+    "productImage": "https://images.homedepot-static.com/productImages/123456789.jpg"
   }},
   ...
 ]
@@ -88,8 +123,9 @@ Only return valid JSON — no extra text.
             if raw_output.startswith("```json"):
                 raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
             items = json.loads(raw_output)
-            print("✅ [generate-quote-items] materials:", json.dumps(items, indent=2))
-            return items
+            materials = postprocess_materials(items)
+            print("✅ [generate-quote-items] materials:", json.dumps(materials, indent=2))
+            return materials
         except json.JSONDecodeError:
             return {"error": "Invalid JSON from AI", "raw": raw_output}
         except Exception as e:
@@ -156,7 +192,11 @@ async def quote_details(request: Request):
 
         prompt = f"""
 You are a contractor assistant. Based on the following job, generate a list of all construction materials needed.
-Do not include tools, labor, links, images, or prices—ONLY give product names and a short description of use.
+Do not include tools. Most importantly, include realistic quantities and prices for each item.
+
+For each item, include:
+- "productLink": a direct URL to a product listing (prefer Home Depot, or Amazon if Home Depot is not available; if unsure, leave empty)
+- "productImage": a direct URL to an image of the product (prefer the image from the productLink if possible; if unsure, leave empty)
 
 Job:
 "{project_details}"
@@ -164,12 +204,20 @@ Job:
 Return a pure JSON array. Each item must include:
 - "name": product name
 - "description": a short description of use
+- "quantity": realistic amount needed
+- "unitPrice": typical price in USD (not total)
+- "productLink": a direct URL to the product online
+- "productImage": a direct URL to an image of the product online
 
 Format:
 [
   {{
     "name": "Drywall Sheet 4x8",
-    "description": "Used to cover walls and ceilings in interior construction."
+    "description": "Used to cover walls and ceilings in interior construction.",
+    "quantity": 12,
+    "unitPrice": 15.75,
+    "productLink": "https://www.homedepot.com/p/Sheetrock-4-ft-x-8-ft-Drywall/123456789",
+    "productImage": "https://images.homedepot-static.com/productImages/123456789.jpg"
   }},
   ...
 ]
@@ -185,7 +233,8 @@ Only return valid JSON — no extra text.
             if raw_output.startswith("```json"):
                 raw_output = raw_output.split("```json")[-1].split("```")[0].strip()
             items = json.loads(raw_output)
-            print("✅ [quote-details] materials:", json.dumps(items, indent=2))
+            materials = postprocess_materials(items)
+            print("✅ [quote-details] materials:", json.dumps(materials, indent=2))
         except json.JSONDecodeError:
             return {"success": False, "error": "Invalid JSON from AI", "raw": raw_output}
         except Exception as e:
@@ -202,7 +251,7 @@ Only return valid JSON — no extra text.
         }
         return {
             "success": True,
-            "materials": items,
+            "materials": materials,
             "labor": labor
         }
     except Exception as e:
